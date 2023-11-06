@@ -1,6 +1,9 @@
 # CI-V
 CI-V communication utilities
 
+[![linting: pylint](https://img.shields.io/badge/linting-pylint-yellowgreen)](https://github.com/pylint-dev/pylint)
+![example workflow](https://github.com/JS2IIU-MH/CI-V/actions/workflows/pylint.yml/badge.svg)
+
 ## utilities
 - test_civ.py
 
