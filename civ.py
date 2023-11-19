@@ -6,7 +6,6 @@ import time
 import serial
 from serial.tools import list_ports
 
-
 ## Const for I-COM rigs
 ICOM_DRIVER_KW = 'CP210x'
 DATA_MAX = 11
@@ -49,7 +48,6 @@ class CIV():
         direct serial connection or CI-V intercface is necessary
     '''
     def __init__(self, com_port) -> None:
-
         # regex pattern for scope data read out
         # only for IC-7300
         if ADDR_RIG == [0x94]:
@@ -98,7 +96,7 @@ class CIV():
 
         buffer = self.ser.readline()
         return buffer
-    
+
     def read_msg(self):
         # TODO: readlineのほうが良いかも
         # buffer = self.ser.read(100)
@@ -109,7 +107,7 @@ class CIV():
     def pwr_off(self):
         ''' shut down '''
         msg_list = PREAMBLE + ADDR_RIG + ADDR_HOST + cmd_pwr_off + POSTAMBLE
-        ret = self.send_msg(msg_list)
+        _ret = self.send_msg(msg_list)
     
     def pwr_on(self):
         ''' pwr on - does not work on USB connection '''
@@ -117,11 +115,10 @@ class CIV():
         NUM_RPT = 25
         WAKE = [0xFE]
         for _ in range(NUM_RPT):
-            ret = self.send_msg(WAKE)
+            _ret = self.send_msg(WAKE)
         msg_list = PREAMBLE + ADDR_RIG + ADDR_HOST + cmd_pwr_on + POSTAMBLE
-        ret = self.send_msg(msg_list)
+        _ret = self.send_msg(msg_list)
         
-
     def read_freq(self):
         ''' Returns Frequency in Hz '''
         msg_list = PREAMBLE + ADDR_RIG + ADDR_HOST + cmd_read_freq + POSTAMBLE
@@ -151,12 +148,12 @@ class CIV():
     def stop_scope_readout(self):
         # scope readout stop
         msg_list = PREAMBLE + ADDR_RIG + ADDR_HOST + cmd_scope_readout_off + POSTAMBLE
-        ret = self.send_msg(msg_list)
+        _ = self.send_msg(msg_list)
     
     def start_scope_readout(self):
         # scope readout stop
         msg_list = PREAMBLE + ADDR_RIG + ADDR_HOST + cmd_scope_readout_on + POSTAMBLE
-        ret = self.send_msg(msg_list)
+        _ = self.send_msg(msg_list)
 
     def read_spectrum(self, is_1st=False):
         ''' read out spectrum scope data from IC-7300
@@ -174,10 +171,10 @@ class CIV():
         if is_1st:
             # scope on
             msg_list = PREAMBLE + ADDR_RIG + ADDR_HOST + cmd_scope_on + POSTAMBLE
-            ret = self.send_msg(msg_list)
+            _ret = self.send_msg(msg_list)
             # scope readout on
             msg_list = PREAMBLE + ADDR_RIG + ADDR_HOST + cmd_scope_readout_on + POSTAMBLE
-            ret = self.send_msg(msg_list)
+            _ret = self.send_msg(msg_list)
 
             # read spectrum data
             msg_list = PREAMBLE + ADDR_RIG + ADDR_HOST + cmd_read_spectrum + POSTAMBLE
@@ -207,8 +204,8 @@ class CIV():
 
         for d in res:
             # print(d[0])
-            if is_complete == False:
-                if is_find_1st == False:
+            if not is_complete:
+                if not is_find_1st:
                     if d[0] == '01':
                         # ### check freq/span
                         data = d[2]
@@ -216,7 +213,6 @@ class CIV():
                         # print(center_freq, data[2:12])
                         span = self.decode_span(data[12:])
                         # print(f'centfreq: {center_freq:,} Hz, span: {span:,} Hz')
-                        
                         is_find_1st = True
                 else:
                     # ### add data
@@ -230,7 +226,6 @@ class CIV():
 
         return scope_data_list, center_freq, span
 
-
     @classmethod
     def scope_data_to_list(cls, scope_data):
         SCOPE_DATA_LENGTH = 475 * 2
@@ -238,7 +233,7 @@ class CIV():
         if len(scope_data) == SCOPE_DATA_LENGTH:
             for i in range(SCOPE_DATA_LENGTH // 2):
                 out_data.append(scope_data[i*2:i*2+2])
-        
+
         return out_data
 
     @classmethod
@@ -263,7 +258,6 @@ class CIV():
     def decode_span(cls, span_string):
         ''' decode span string, returns span in Hz'''
         SPAN_FULL_LENGTH = 12
-        SPAN_LENGTH = 10
         if len(span_string) == SPAN_FULL_LENGTH:
             span = int(span_string[2:3]) * 1000\
             + int(span_string[3:4]) * 100\
@@ -281,10 +275,9 @@ class CIV():
         for p in ports:
             # if 'USB Serial Port' in p.description:
             port_list.append(p.device)
-        
+
         return port_list
 
-    
     def read_spectrum_to_file(self):
         READ_MAX = 11
         filename = 'spectrum_out2.txt'
@@ -312,7 +305,7 @@ class CIV():
     
     def read_temp(self):
         msg_list = PREAMBLE + ADDR_RIG + ADDR_HOST + cmd_temp + POSTAMBLE
-        ret = self.send_msg(msg_list)
+        _ret = self.send_msg(msg_list)
 
     def read_vd(self):
         """ read Vd value in V, IC-7300 only"""
@@ -331,7 +324,7 @@ class CIV():
             out_val = 10 / 13 * val
         else:
             out_val = 6 / 228 * val + 10
-        
+
         return out_val
 
     def read_opmode(self):
@@ -341,13 +334,13 @@ class CIV():
         msg_list = PREAMBLE + ADDR_RIG + ADDR_HOST + cmd_read_opmode + POSTAMBLE
         ret = self.send_msg(msg_list)
         s = re.search(r'fefe009404([0-9]{4})fd', ret.hex())
-        
+
         if s is not None:
             print(s.group(1))
             num = int(s.group(1)[:2])
         else:
             num = 9
-        
+
         # print(f'RO{opmode_str[num]}: {num}, {ret.hex()}')
 
         return opmode_str[num]
@@ -361,15 +354,13 @@ class CIV():
             for i in range(int(num / 2)):
                 out_msg = out_msg + msg_in[num-i*2-2:num-i*2]
             return out_msg
-        else:
-            return ''
+        return ''
 
     def __del__(self):
         try:
             self.ser.close()
         except AttributeError:
             pass
-
 
 
 def main():
@@ -387,7 +378,7 @@ def main():
     # civ.read_freq()
     # print(civ.read_opmode())
     # print(civ.serial_port_list())
-    
+
 
 if __name__ == '__main__':
     main()
