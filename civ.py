@@ -55,6 +55,8 @@ class CIV():
             self.pat_02 = re.compile(r'fefe0094270000([0-9]{2})([0-9]{2})(\w{50,100})fd')
             # pat_11 = re.compile(r'fefe0094270000([0-9]{2})([0-9]{2})(\w{50})fd')
             self.pat_all = re.compile(r'fefe0094270000([0-9]{2})([0-9]{2})(\w{24}|\w{50}|\w{100})fd')
+        # TODO: ADDR_RIGによらず同じ正規表現で表すよう変更したい
+        # pat = re.compile(r'fefe([0-9]{2})([0-9]{2})270000([0-9]{2})([0-9]{2})00([0-9]{10})([0-9]{12})fd')
 
         self.ser = serial.Serial(port=com_port,
                                  # baudrate=115200,
@@ -127,6 +129,7 @@ class CIV():
         ret_s = ''
 
         # TODO: アドレスごとに分岐させて処理するのはやめたい
+        # pat = re.compile(r'fefe([0-9]{2})([0-9]{2})270000([0-9]{2})([0-9]{2})00([0-9]{10})([0-9]{12})fd')
         if ADDR_RIG == [0x94]:
             s = re.search(r'fefe009403([0-9]{10})fd', ret.hex())
         elif ADDR_RIG == [0x86]:
