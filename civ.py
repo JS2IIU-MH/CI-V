@@ -6,11 +6,11 @@ import time
 import serial
 from serial.tools import list_ports
 
-## Const for I-COM rigs
+# Const for I-COM rigs
 ICOM_DRIVER_KW = 'CP210x'
 DATA_MAX = 11
 
-## CI-V commands
+# CI-V commands
 PREAMBLE = [0xFE, 0xFE]
 POSTAMBLE = [0xFD]
 
@@ -98,6 +98,7 @@ class CIV():
         return buffer
 
     def read_msg(self):
+        """ read serial communication buffer """
         # TODO: readlineのほうが良いかも
         # buffer = self.ser.read(100)
         buffer = self.ser.readline()
@@ -107,8 +108,8 @@ class CIV():
     def pwr_off(self):
         ''' shut down '''
         msg_list = PREAMBLE + ADDR_RIG + ADDR_HOST + cmd_pwr_off + POSTAMBLE
-        _ret = self.send_msg(msg_list)
-    
+        _ = self.send_msg(msg_list)
+
     def pwr_on(self):
         ''' pwr on - does not work on USB connection '''
         # baud 19200 -> 0xFE * 25
@@ -117,13 +118,14 @@ class CIV():
         for _ in range(NUM_RPT):
             _ret = self.send_msg(WAKE)
         msg_list = PREAMBLE + ADDR_RIG + ADDR_HOST + cmd_pwr_on + POSTAMBLE
-        _ret = self.send_msg(msg_list)
-        
+        _ = self.send_msg(msg_list)
+
     def read_freq(self):
         ''' Returns Frequency in Hz '''
         msg_list = PREAMBLE + ADDR_RIG + ADDR_HOST + cmd_read_freq + POSTAMBLE
         ret = self.send_msg(msg_list)
         ret_s = ''
+
         # TODO: アドレスごとに分岐させて処理するのはやめたい
         if ADDR_RIG == [0x94]:
             s = re.search(r'fefe009403([0-9]{10})fd', ret.hex())
@@ -146,12 +148,12 @@ class CIV():
         return freq
 
     def stop_scope_readout(self):
-        # scope readout stop
+        """ scope readout stop """
         msg_list = PREAMBLE + ADDR_RIG + ADDR_HOST + cmd_scope_readout_off + POSTAMBLE
         _ = self.send_msg(msg_list)
-    
+
     def start_scope_readout(self):
-        # scope readout stop
+        """ scope readout start """
         msg_list = PREAMBLE + ADDR_RIG + ADDR_HOST + cmd_scope_readout_on + POSTAMBLE
         _ = self.send_msg(msg_list)
 
@@ -171,10 +173,10 @@ class CIV():
         if is_1st:
             # scope on
             msg_list = PREAMBLE + ADDR_RIG + ADDR_HOST + cmd_scope_on + POSTAMBLE
-            _ret = self.send_msg(msg_list)
+            _ = self.send_msg(msg_list)
             # scope readout on
             msg_list = PREAMBLE + ADDR_RIG + ADDR_HOST + cmd_scope_readout_on + POSTAMBLE
-            _ret = self.send_msg(msg_list)
+            _ = self.send_msg(msg_list)
 
             # read spectrum data
             msg_list = PREAMBLE + ADDR_RIG + ADDR_HOST + cmd_read_spectrum + POSTAMBLE
@@ -228,6 +230,7 @@ class CIV():
 
     @classmethod
     def scope_data_to_list(cls, scope_data):
+        """ scopedata format change from continuous string to splitted string list """
         SCOPE_DATA_LENGTH = 475 * 2
         out_data = []
         if len(scope_data) == SCOPE_DATA_LENGTH:
@@ -238,6 +241,7 @@ class CIV():
 
     @classmethod
     def decode_freq(cls, freq_string):
+        """ decode frequency format """
         FREQ_FULL_LENGTH = 10
         FREQ_LENGTH = 10
         if len(freq_string) == FREQ_FULL_LENGTH:
@@ -260,9 +264,9 @@ class CIV():
         SPAN_FULL_LENGTH = 12
         if len(span_string) == SPAN_FULL_LENGTH:
             span = int(span_string[2:3]) * 1000\
-            + int(span_string[3:4]) * 100\
-            + int(span_string[4:5]) * 100000\
-            + int(span_string[5:6]) * 10000
+                 + int(span_string[3:4]) * 100\
+                 + int(span_string[4:5]) * 100000\
+                 + int(span_string[5:6]) * 10000
 
         else:
             span = 0
@@ -270,6 +274,7 @@ class CIV():
 
     @classmethod
     def serial_port_list(cls):
+        """ returns serial port list """
         port_list = []
         ports = list(serial.tools.list_ports.comports())
         for p in ports:
@@ -279,7 +284,8 @@ class CIV():
         return port_list
 
     def read_spectrum_to_file(self):
-        READ_MAX = 11
+        """ spectrum data save to csv """
+        # READ_MAX = 11
         filename = 'spectrum_out2.txt'
         count = 0
 
@@ -291,7 +297,7 @@ class CIV():
         msg_list = PREAMBLE + ADDR_RIG + ADDR_HOST + cmd_scope_readout_on + POSTAMBLE
         _ = self.send_msg(msg_list)
 
-        with open(filename, 'w') as f:
+        with open(filename, 'w', encoding='utf-8') as f:
             # data request
             msg_list = PREAMBLE + ADDR_RIG + ADDR_HOST + cmd_read_spectrum + POSTAMBLE
             ret = self.send_msg(msg_list)
@@ -302,10 +308,12 @@ class CIV():
                 f.write(ret.hex())
                 # print(f'#{count:02} {ret.hex()}')
                 count += 1
-    
+
     def read_temp(self):
+        """ request temperature information """
         msg_list = PREAMBLE + ADDR_RIG + ADDR_HOST + cmd_temp + POSTAMBLE
-        _ret = self.send_msg(msg_list)
+        ret = self.send_msg(msg_list)
+        return ret
 
     def read_vd(self):
         """ read Vd value in V, IC-7300 only"""
@@ -329,7 +337,8 @@ class CIV():
 
     def read_opmode(self):
         ''' returnd mode in string'''
-        opmode_str = ['LSB', 'USB', 'AM', 'CW', 'RTTY', 'FM', 'Reserved', 'CW-R', 'RTTY-R', 'N/A']
+        opmode_str = ['LSB', 'USB', 'AM', 'CW', 'RTTY',
+                      'FM', 'Reserved', 'CW-R', 'RTTY-R', 'N/A']
 
         msg_list = PREAMBLE + ADDR_RIG + ADDR_HOST + cmd_read_opmode + POSTAMBLE
         ret = self.send_msg(msg_list)
@@ -347,6 +356,7 @@ class CIV():
 
     @classmethod
     def reverse_msg(cls, msg_in):
+        """ reverse msg from rig, ex frequency etc. """
         # 2桁ずつ、逆順に並んでいるので入れ替える
         num = len(msg_in)
         out_msg = ''
