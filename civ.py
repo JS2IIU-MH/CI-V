@@ -42,27 +42,24 @@ cmd_vd = [0x15, 0x15]
 
 cmd_read_opmode = [0x04]
 
+cmd_read_gps_pos = [0x23, 0x00]
+
 
 class CIV():
     ''' class CIV, controls i-com rig via CI-V
         direct serial connection or CI-V intercface is necessary
     '''
     def __init__(self, com_port, rig_pn='IC-7300') -> None:
-        # regex pattern for scope data read out
+        # rig address and baudrate setting
         self.addr_rig = self.rig_address(rig_pn)
+        rig_baud = self.rig_baudrate(rig_pn)
 
-        # only for IC-7300
-        # if ADDR_RIG == [0x94]:
-        #     self.pat_01 = re.compile(r'fefe0094270000([0-9]{2})([0-9]{2})([0-9]+)fd')
-        #     self.pat_02 = re.compile(r'fefe0094270000([0-9]{2})([0-9]{2})(\w{50,100})fd')
-        #     # pat_11 = re.compile(r'fefe0094270000([0-9]{2})([0-9]{2})(\w{50})fd')
-        #     self.pat_all = re.compile(r'fefe0094270000([0-9]{2})([0-9]{2})(\w{24}|\w{50}|\w{100})fd')
-
-        self.pat_scope = re.compile(r'fefe([0-9]{2})([\w]{2})270000([0-9]{2})([0-9]{2})00([0-9]{10})([0-9]{12})fd')
+        # regex pattern for scope data read out
+        # self.pat_scope = re.compile(r'fefe([0-9]{2})([\w]{2})270000([0-9]{2})([0-9]{2})00([0-9]{10})([0-9]{12})fd')
+        self.pat_scope = re.compile(r'fefe00(\w{2})270000([0-9]{2})([0-9]{2})(\w{24}|\w{50}|\w{100})fd')
 
         self.ser = serial.Serial(port=com_port,
-                                 baudrate=115200,
-                                 # baudrate=19200,
+                                 baudrate=rig_baud,
                                  parity=serial.PARITY_NONE,
                                  stopbits=serial.STOPBITS_ONE,
                                  timeout=2)
@@ -130,14 +127,7 @@ class CIV():
         ret = self.send_msg(msg_list)
         ret_s = ''
 
-        # pat = re.compile(r'fefe([0-9]{2})([0-9]{2})270000([0-9]{2})([0-9]{2})00([0-9]{10})([0-9]{12})fd')
-        # if ADDR_RIG == [0x94]:
-        #     s = re.search(r'fefe009403([0-9]{10})fd', ret.hex())
-        # elif ADDR_RIG == [0x86]:
-        #     s = re.search(r'fefe008603([0-9]{10})fd', ret.hex())
-        # elif ADDR_RIG == [0x7E]:
-        #     s = re.search(r'fefe007e03([0-9]{10})fd', ret.hex())
-        s = re.search(r'fefe00([\w]{2})03([0-9]{10})fd', ret.hex())
+        s = re.search(r'fefe00(\w{2})03([0-9]{10})fd', ret.hex())
 
         if s is not None:
             ret_s = s.group(2)
@@ -198,11 +188,9 @@ class CIV():
         # data2-11: fefe0094 27 00 ## 11 **data(50/100)** fd
         #
         # regex pattern definition in self.__init__()
-        # res = re.findall(self.pat_all, ret_dat.hex())
-        # res_data = re.findall(self.pat_02, ret_dat.hex())
-        #
         # pat_scope = re.compile(r'fefe([0-9]{2})([0-9]{2})270000([0-9]{2})([0-9]{2})00([0-9]{10})([0-9]{12})fd')
         # [('00', '94', '01', '11', '000030660900002500000000')]
+        # self.pat_scope = re.compile(r'fefe00(\w{2})270000([0-9]{2})([0-9]{2})(\w{24}|\w{50}|\w{100})fd')
         res = re.findall(self.pat_scope, ret_dat.hex())
 
         count = 1
@@ -218,11 +206,11 @@ class CIV():
             # print(d[0])
             if not is_complete:
                 if not is_find_1st:
-                    if d[2] == '01':
-                        # d[2] == NOW
+                    if d[1] == '01':
+                        # d[1] == NOW
                         # ### check freq/span
-                        data = d[4]
-                        # d[4] = centerfreq + span
+                        data = d[3]
+                        # d[3] = centerfreq + span
                         center_freq = self.decode_freq(data[2:12])
                         # print(center_freq, data[2:12])
                         span = self.decode_span(data[12:])
@@ -230,8 +218,8 @@ class CIV():
                         is_find_1st = True
                 else:
                     # ### add data
-                    scope_data = scope_data + d[4]
-                    if d[2] == '11':
+                    scope_data = scope_data + d[3]
+                    if d[1] == '11':
                         is_find_1st = False
                         data_list = self.scope_data_to_list(scope_data)
                         for da in data_list:
@@ -350,21 +338,40 @@ class CIV():
     def read_opmode(self):
         ''' returnd mode in string'''
         opmode_str = ['LSB', 'USB', 'AM', 'CW', 'RTTY',
-                      'FM', 'Reserved', 'CW-R', 'RTTY-R', 'N/A']
+                      'FM', 'Reserved', 'CW-R', 'RTTY-R', 'N/A',
+                      'N/A', 'N/A', 'N/A', 'N/A', 'N/A',
+                      'N/A','N/A', 'DV']
 
         msg_list = PREAMBLE + self.addr_rig + ADDR_HOST + cmd_read_opmode + POSTAMBLE
         ret = self.send_msg(msg_list)
         s = re.search(r'fefe00([\w]{2})04([0-9]{4})fd', ret.hex())
 
         if s is not None:
-            print(s.group(2))
+            # print(s.group(2))
             num = int(s.group(2)[:2])
         else:
             num = 9
 
-        # print(f'RO{opmode_str[num]}: {num}, {ret.hex()}')
-
         return opmode_str[num]
+    
+    def read_gps_position(self):
+        """ read out GPS position data
+            Returns:
+                tuple latitude, longitude
+        """
+        # cmd_read_gps_pos
+        msg_list = PREAMBLE + self.addr_rig + ADDR_HOST + cmd_read_gps_pos + POSTAMBLE
+        ret = self.send_msg(msg_list)
+        pat_gps = re.compile(r'fefe00(\w{2})2300([0-9]{10})([0-9]{12})(\w{8})([0-9]{4})([0-9]{6})([0-9]{14})fd')
+        s = re.findall(pat_gps, ret.hex())
+        # print(s)
+        lat = s[0][1]
+        lon = s[0][2]
+        alt = s[0][3]
+        time_utc = s[0][6]
+        print(f'latitude: {lat}, longitude: {lon}, altitude: {alt}, datetime: {time_utc}')
+
+        return lat, lon
 
     @classmethod
     def reverse_msg(cls, msg_in):
@@ -382,17 +389,33 @@ class CIV():
     def rig_address(cls, rig_pn):
         """ returns rig's CI-V address in string """
         RIG_ADDRESS_DICT = {
-            'IC-7300': '0x94',
-            'ID-51': '0x86',
-            'IC-R6': '0x7E',
+            'IC-7300': 0x94,
+            'ID-51': 0x86,
+            'IC-R6': 0x7E,
         }
         try:
             rig_address = RIG_ADDRESS_DICT[rig_pn]
         except KeyError:
             print(f'KeyError: {rig_pn} is not in list')
-            rig_address = '0x00'
+            rig_address = 0x00
         
-        return rig_address
+        return [rig_address]
+
+    @classmethod
+    def rig_baudrate(cls, rig_pn):
+        """ returns rig's max baudrate [bps] in int """
+        RIG_BAUD_DICT = {
+            'IC-7300': 115200,
+            'ID-51': 19200,
+            'IC-R6': 19200,
+        }
+        try:
+            rig_baud = RIG_BAUD_DICT[rig_pn]
+        except KeyError:
+            print(f'KeyError: {rig_pn} is not in list')
+            rig_baud = 19200
+        
+        return rig_baud
 
     def __del__(self):
         try:
@@ -403,7 +426,8 @@ class CIV():
 
 def main():
     ''' main func for test purpose '''
-    civ = CIV('COM5', 'IC-7300')
+    # civ = CIV('COM5', 'IC-R6')
+    civ = CIV('COM5', 'ID-51')
 
     # リグに表示されている周波数[Hz] を取得する。
     print(f'Frequency: {civ.read_freq():,} Hz')
@@ -414,7 +438,8 @@ def main():
 
     # civ.read_vd()
     # civ.read_freq()
-    # print(civ.read_opmode())
+    print(civ.read_opmode())
+    print(civ.read_gps_position())
     # print(civ.serial_port_list())
 
 
