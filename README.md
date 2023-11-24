@@ -5,7 +5,8 @@ CI-V communication utilities
 ![example workflow](https://github.com/JS2IIU-MH/CI-V/actions/workflows/pylint.yml/badge.svg)
 
 ## utilities
-- `civ.py`: IC-7300, ID-51もしくはIC-R6とCI-Vによる通信を行うユーティリティ。対象機種に合わせてリグ側アドレスを書き換えてください。
+- `civ.py`: IC-7300, ID-51もしくはIC-R6とCI-Vによる通信を行うユーティリティ。
+  - CIVクラスのインスタンス化の時にリグの名称を渡すことで、リグのアドレス設定および、Baudrateが設定されます。
   - I-COMの他の機種にも対応できるように改変する予定です。
   - とりあえず動くことはIC-7300で確認済み。少しずつ綺麗に整えていく予定です。
 
@@ -23,26 +24,27 @@ CI-V communication utilities
 
 ## デフォルトのCI-Vアドレス
 
-I-COMの取扱説明書からピックしました。（2023年11月現在）
+- I-COMの取扱説明書からピックしました。（2023年11月現在）
+- 無線機ごとに選択可能なBaudrateが異なるため、取扱説明書で確認してください。
 
-| Model | Default Address | Note |
-| - | - | - |
-| ID-52 | `0xA6` | USB経由、SP経由は動作保証対象外 |
-| ID-50 | `0xAE` | USB経由、SP経由は動作保証対象外 |
-| ID-51 Plus2 | `0x86` | SP |
-| IC-T10 | `n/a` | CI-Vなし |
-| IC-S10 | `n/a` | CI-Vなし |
-| ID-31 Plus | `n/a` | CI-Vなし |
-| IC-7851 | `0x8E` | USB経由、REMOTE |
-| IC-7610 | `0x98` | USB経由 |
-| IC-7300 | `0x94` | USB経由、REMOTE |
-| IC-905 | `0xAC` |  |
-| IC-705 | `0xA4` |  |
-| IC-9700 | `0xA2` | USB経由、DATA |
-| IC-7100 | `0x88` | USB経由、REMOTE |
-| IC-R8600 | `0x96` | USB経由 |
-| IC-R30 | `0x9C` | 付属USBケーブル経由、SP経由は動作保証外 |
-| IC-R6 | `0x7E` | SP |
+| Model | Default Address | Note | max baudrate [bps] |
+| - | - | - | - |
+| ID-52 | `0xA6` | USB経由、SP経由は動作保証対象外 | |
+| ID-50 | `0xAE` | USB経由、SP経由は動作保証対象外 | |
+| ID-51 Plus2 | `0x86` | SP | 19200 |
+| IC-T10 | `n/a` | CI-Vなし | `n/a` |
+| IC-S10 | `n/a` | CI-Vなし | `n/a` |
+| ID-31 Plus | `n/a` | CI-Vなし | `n/a` |
+| IC-7851 | `0x8E` | USB経由、REMOTE | |
+| IC-7610 | `0x98` | USB経由 | |
+| IC-7300 | `0x94` | USB経由、REMOTE | 115200 |
+| IC-905 | `0xAC` |  | |
+| IC-705 | `0xA4` |  | |
+| IC-9700 | `0xA2` | USB経由、DATA | |
+| IC-7100 | `0x88` | USB経由、REMOTE | |
+| IC-R8600 | `0x96` | USB経由 | |
+| IC-R30 | `0x9C` | 付属USBケーブル経由、SP経由は動作保証外 | |
+| IC-R6 | `0x7E` | SP | 19200 |
 
 ## USB - CI-Vインタフェース
 - ICOM CT-17が生産終了で入手困難です。インタフェースについては自作しましたレポートがネットにたくさんありますので検索してみてください。
@@ -50,6 +52,13 @@ I-COMの取扱説明書からピックしました。（2023年11月現在）
 - フォンジャックの端子については、各無線機の取扱説明書をしっかり確認してください。
 <div>
 <img src="doc/CI-V_circuit.png" width=300>
+</div>
+
+## SPジャック、REMOTEジャック配線図
+- SP/REMOTEジャックの配線図の代表例を示します。各無線機の取扱説明書をしっかり確認してください。
+
+<div>
+<img src="doc/jack.png" width=300>
 </div>
 
 ## Reference
