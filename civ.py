@@ -47,20 +47,22 @@ class CIV():
     ''' class CIV, controls i-com rig via CI-V
         direct serial connection or CI-V intercface is necessary
     '''
-    def __init__(self, com_port) -> None:
+    def __init__(self, com_port, rig_pn='IC-7300') -> None:
         # regex pattern for scope data read out
+        self.addr_rig = self.rig_address(rig_pn)
+
         # only for IC-7300
-        if ADDR_RIG == [0x94]:
-            self.pat_01 = re.compile(r'fefe0094270000([0-9]{2})([0-9]{2})([0-9]+)fd')
-            self.pat_02 = re.compile(r'fefe0094270000([0-9]{2})([0-9]{2})(\w{50,100})fd')
-            # pat_11 = re.compile(r'fefe0094270000([0-9]{2})([0-9]{2})(\w{50})fd')
-            self.pat_all = re.compile(r'fefe0094270000([0-9]{2})([0-9]{2})(\w{24}|\w{50}|\w{100})fd')
-        # TODO: ADDR_RIGによらず同じ正規表現で表すよう変更したい
-        # pat = re.compile(r'fefe([0-9]{2})([0-9]{2})270000([0-9]{2})([0-9]{2})00([0-9]{10})([0-9]{12})fd')
+        # if ADDR_RIG == [0x94]:
+        #     self.pat_01 = re.compile(r'fefe0094270000([0-9]{2})([0-9]{2})([0-9]+)fd')
+        #     self.pat_02 = re.compile(r'fefe0094270000([0-9]{2})([0-9]{2})(\w{50,100})fd')
+        #     # pat_11 = re.compile(r'fefe0094270000([0-9]{2})([0-9]{2})(\w{50})fd')
+        #     self.pat_all = re.compile(r'fefe0094270000([0-9]{2})([0-9]{2})(\w{24}|\w{50}|\w{100})fd')
+
+        self.pat_scope = re.compile(r'fefe([0-9]{2})([\w]{2})270000([0-9]{2})([0-9]{2})00([0-9]{10})([0-9]{12})fd')
 
         self.ser = serial.Serial(port=com_port,
-                                 # baudrate=115200,
-                                 baudrate=19200,
+                                 baudrate=115200,
+                                 # baudrate=19200,
                                  parity=serial.PARITY_NONE,
                                  stopbits=serial.STOPBITS_ONE,
                                  timeout=2)
@@ -109,7 +111,7 @@ class CIV():
 
     def pwr_off(self):
         ''' shut down '''
-        msg_list = PREAMBLE + ADDR_RIG + ADDR_HOST + cmd_pwr_off + POSTAMBLE
+        msg_list = PREAMBLE + self.addr_rig + ADDR_HOST + cmd_pwr_off + POSTAMBLE
         _ = self.send_msg(msg_list)
 
     def pwr_on(self):
@@ -119,25 +121,26 @@ class CIV():
         WAKE = [0xFE]
         for _ in range(NUM_RPT):
             _ret = self.send_msg(WAKE)
-        msg_list = PREAMBLE + ADDR_RIG + ADDR_HOST + cmd_pwr_on + POSTAMBLE
+        msg_list = PREAMBLE + self.addr_rig + ADDR_HOST + cmd_pwr_on + POSTAMBLE
         _ = self.send_msg(msg_list)
 
     def read_freq(self):
         ''' Returns Frequency in Hz '''
-        msg_list = PREAMBLE + ADDR_RIG + ADDR_HOST + cmd_read_freq + POSTAMBLE
+        msg_list = PREAMBLE + self.addr_rig + ADDR_HOST + cmd_read_freq + POSTAMBLE
         ret = self.send_msg(msg_list)
         ret_s = ''
 
-        # TODO: アドレスごとに分岐させて処理するのはやめたい
         # pat = re.compile(r'fefe([0-9]{2})([0-9]{2})270000([0-9]{2})([0-9]{2})00([0-9]{10})([0-9]{12})fd')
-        if ADDR_RIG == [0x94]:
-            s = re.search(r'fefe009403([0-9]{10})fd', ret.hex())
-        elif ADDR_RIG == [0x86]:
-            s = re.search(r'fefe008603([0-9]{10})fd', ret.hex())
-        elif ADDR_RIG == [0x7E]:
-            s = re.search(r'fefe007e03([0-9]{10})fd', ret.hex())
+        # if ADDR_RIG == [0x94]:
+        #     s = re.search(r'fefe009403([0-9]{10})fd', ret.hex())
+        # elif ADDR_RIG == [0x86]:
+        #     s = re.search(r'fefe008603([0-9]{10})fd', ret.hex())
+        # elif ADDR_RIG == [0x7E]:
+        #     s = re.search(r'fefe007e03([0-9]{10})fd', ret.hex())
+        s = re.search(r'fefe00([\w]{2})03([0-9]{10})fd', ret.hex())
+
         if s is not None:
-            ret_s = s.group(1)
+            ret_s = s.group(2)
             # print(len(ret))
         if len(ret_s) == 10:
             # 送信したメッセージから0xfdの2文字分減らして帰ってきた文字のみ抽出する=周波数の文字列
@@ -152,12 +155,12 @@ class CIV():
 
     def stop_scope_readout(self):
         """ scope readout stop """
-        msg_list = PREAMBLE + ADDR_RIG + ADDR_HOST + cmd_scope_readout_off + POSTAMBLE
+        msg_list = PREAMBLE + self.addr_rig + ADDR_HOST + cmd_scope_readout_off + POSTAMBLE
         _ = self.send_msg(msg_list)
 
     def start_scope_readout(self):
         """ scope readout start """
-        msg_list = PREAMBLE + ADDR_RIG + ADDR_HOST + cmd_scope_readout_on + POSTAMBLE
+        msg_list = PREAMBLE + self.addr_rig + ADDR_HOST + cmd_scope_readout_on + POSTAMBLE
         _ = self.send_msg(msg_list)
 
     def read_spectrum(self, is_1st=False):
@@ -175,14 +178,14 @@ class CIV():
         # if sspectrum scope is not shown in rig's display, turn on scope
         if is_1st:
             # scope on
-            msg_list = PREAMBLE + ADDR_RIG + ADDR_HOST + cmd_scope_on + POSTAMBLE
+            msg_list = PREAMBLE + self.addr_rig + ADDR_HOST + cmd_scope_on + POSTAMBLE
             _ = self.send_msg(msg_list)
             # scope readout on
-            msg_list = PREAMBLE + ADDR_RIG + ADDR_HOST + cmd_scope_readout_on + POSTAMBLE
+            msg_list = PREAMBLE + self.addr_rig + ADDR_HOST + cmd_scope_readout_on + POSTAMBLE
             _ = self.send_msg(msg_list)
 
             # read spectrum data
-            msg_list = PREAMBLE + ADDR_RIG + ADDR_HOST + cmd_read_spectrum + POSTAMBLE
+            msg_list = PREAMBLE + self.addr_rig + ADDR_HOST + cmd_read_spectrum + POSTAMBLE
             ret_dat = self.send_msg(msg_list)
         # print(ret.hex())
         while count < 15:
@@ -195,8 +198,12 @@ class CIV():
         # data2-11: fefe0094 27 00 ## 11 **data(50/100)** fd
         #
         # regex pattern definition in self.__init__()
-        res = re.findall(self.pat_all, ret_dat.hex())
+        # res = re.findall(self.pat_all, ret_dat.hex())
         # res_data = re.findall(self.pat_02, ret_dat.hex())
+        #
+        # pat_scope = re.compile(r'fefe([0-9]{2})([0-9]{2})270000([0-9]{2})([0-9]{2})00([0-9]{10})([0-9]{12})fd')
+        # [('00', '94', '01', '11', '000030660900002500000000')]
+        res = re.findall(self.pat_scope, ret_dat.hex())
 
         count = 1
         scope_data = ''
@@ -211,9 +218,11 @@ class CIV():
             # print(d[0])
             if not is_complete:
                 if not is_find_1st:
-                    if d[0] == '01':
+                    if d[2] == '01':
+                        # d[2] == NOW
                         # ### check freq/span
-                        data = d[2]
+                        data = d[4]
+                        # d[4] = centerfreq + span
                         center_freq = self.decode_freq(data[2:12])
                         # print(center_freq, data[2:12])
                         span = self.decode_span(data[12:])
@@ -221,12 +230,12 @@ class CIV():
                         is_find_1st = True
                 else:
                     # ### add data
-                    scope_data = scope_data + d[2]
-                    if d[0] == '11':
+                    scope_data = scope_data + d[4]
+                    if d[2] == '11':
                         is_find_1st = False
                         data_list = self.scope_data_to_list(scope_data)
-                        for d in data_list:
-                            scope_data_list.append(int(d,16))
+                        for da in data_list:
+                            scope_data_list.append(int(da, 16))
                         is_complete = True
 
         return scope_data_list, center_freq, span
@@ -293,16 +302,16 @@ class CIV():
         count = 0
 
         # scope on
-        msg_list = PREAMBLE + ADDR_RIG + ADDR_HOST + cmd_scope_on + POSTAMBLE
+        msg_list = PREAMBLE + self.addr_rig + ADDR_HOST + cmd_scope_on + POSTAMBLE
         _ = self.send_msg(msg_list)
 
         # scope readout on
-        msg_list = PREAMBLE + ADDR_RIG + ADDR_HOST + cmd_scope_readout_on + POSTAMBLE
+        msg_list = PREAMBLE + self.addr_rig + ADDR_HOST + cmd_scope_readout_on + POSTAMBLE
         _ = self.send_msg(msg_list)
 
         with open(filename, 'w', encoding='utf-8') as f:
             # data request
-            msg_list = PREAMBLE + ADDR_RIG + ADDR_HOST + cmd_read_spectrum + POSTAMBLE
+            msg_list = PREAMBLE + self.addr_rig + ADDR_HOST + cmd_read_spectrum + POSTAMBLE
             ret = self.send_msg(msg_list)
             f.write(ret.hex() + '\n')
 
@@ -314,15 +323,15 @@ class CIV():
 
     def read_temp(self):
         """ request temperature information """
-        msg_list = PREAMBLE + ADDR_RIG + ADDR_HOST + cmd_temp + POSTAMBLE
+        msg_list = PREAMBLE + self.addr_rig + ADDR_HOST + cmd_temp + POSTAMBLE
         ret = self.send_msg(msg_list)
         return ret
 
     def read_vd(self):
         """ read Vd value in V, IC-7300 only"""
-        msg_list = PREAMBLE + ADDR_RIG + ADDR_HOST + cmd_vd + POSTAMBLE
+        msg_list = PREAMBLE + self.addr_rig + ADDR_HOST + cmd_vd + POSTAMBLE
         ret = self.send_msg(msg_list)
-        s = re.search(r'fefe00941515([0-9]{4})fd', ret.hex())
+        s = re.search(r'fefe00([\w]{2})1515([0-9]{4})fd', ret.hex())
         if s is not None:
             val = int(s.group(1))
             # print(val)
@@ -343,13 +352,13 @@ class CIV():
         opmode_str = ['LSB', 'USB', 'AM', 'CW', 'RTTY',
                       'FM', 'Reserved', 'CW-R', 'RTTY-R', 'N/A']
 
-        msg_list = PREAMBLE + ADDR_RIG + ADDR_HOST + cmd_read_opmode + POSTAMBLE
+        msg_list = PREAMBLE + self.addr_rig + ADDR_HOST + cmd_read_opmode + POSTAMBLE
         ret = self.send_msg(msg_list)
-        s = re.search(r'fefe009404([0-9]{4})fd', ret.hex())
+        s = re.search(r'fefe00([\w]{2})04([0-9]{4})fd', ret.hex())
 
         if s is not None:
-            print(s.group(1))
-            num = int(s.group(1)[:2])
+            print(s.group(2))
+            num = int(s.group(2)[:2])
         else:
             num = 9
 
@@ -368,6 +377,22 @@ class CIV():
                 out_msg = out_msg + msg_in[num-i*2-2:num-i*2]
             return out_msg
         return ''
+    
+    @classmethod
+    def rig_address(cls, rig_pn):
+        """ returns rig's CI-V address in string """
+        RIG_ADDRESS_DICT = {
+            'IC-7300': '0x94',
+            'ID-51': '0x86',
+            'IC-R6': '0x7E',
+        }
+        try:
+            rig_address = RIG_ADDRESS_DICT[rig_pn]
+        except KeyError:
+            print(f'KeyError: {rig_pn} is not in list')
+            rig_address = '0x00'
+        
+        return rig_address
 
     def __del__(self):
         try:
@@ -378,7 +403,7 @@ class CIV():
 
 def main():
     ''' main func for test purpose '''
-    civ = CIV('COM5')
+    civ = CIV('COM5', 'IC-7300')
 
     # リグに表示されている周波数[Hz] を取得する。
     print(f'Frequency: {civ.read_freq():,} Hz')
