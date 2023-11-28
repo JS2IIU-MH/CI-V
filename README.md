@@ -2,8 +2,9 @@
 CI-V communication utilities
 
 [![linting: pylint](https://img.shields.io/badge/linting-pylint-yellowgreen)](https://github.com/pylint-dev/pylint)
-![example workflow](https://github.com/JS2IIU-MH/CI-V/actions/workflows/pylint.yml/badge.svg)
+![example workflow](https://github.com/JS2IIU-MH/CI-V/actions/workflows/flake8.yml/badge.svg)
 ![](https://byob.yarr.is/JS2IIU-MH/CI-V/time)
+[![License: MIT](https://img.shields.io/badge/License-MIT-brightgreen.svg)](LICENSE)
 
 ## utilities
 - `civ.py`: IC-7300, ID-51もしくはIC-R6とCI-Vによる通信を行うユーティリティ。
