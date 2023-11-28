@@ -5,10 +5,10 @@ import struct
 import serial
 from serial.tools import list_ports
 
-## Const for I-COM rigs
+# Const for I-COM rigs
 ICOM_DRIVER_KW = 'CP210x'
 
-## CI-V commands
+# CI-V commands
 PREAMBLE = [0xFE, 0xFE]
 POSTAMBLE = [0xFD]
 
@@ -84,12 +84,14 @@ class CIV():
     def __del__(self):
         self.ser.close()
 
+
 def main():
     ''' main func for test purpose '''
     civ = CIV('COM3')
 
     # リグに表示されている周波数[Hz] を取得する。
     print(f'Frequency: {civ.read_freq():,} Hz')
+
 
 if __name__ == '__main__':
     main()
