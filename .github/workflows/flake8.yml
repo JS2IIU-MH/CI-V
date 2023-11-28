@@ -42,7 +42,7 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
 
-  Run BringYourOwnBadge:
+  RunBringYourOwnBadge:
     needs: SerGlobalConstants
     runs-on: ubuntu-latest
     steps:
@@ -65,7 +65,7 @@ jobs:
           COLOR: ${{ needs.SetGlobalConstants.outputs.CHECKING_BADGE_COLOR }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-  Run Flake8:
+  RunFlake8:
     needs: [CreateCache, SetGlobalConstants]
     runs-on: ubuntu-latest
     timeout-minutes: 20
