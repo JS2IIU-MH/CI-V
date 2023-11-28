@@ -7,10 +7,11 @@ import time
 import numpy as np
 
 import matplotlib.pyplot as plt
-from matplotlib import animation
+# from matplotlib import animation
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 
 import civ
+
 
 class Application(tk.Frame):
     ''' GUI Application '''
@@ -25,9 +26,7 @@ class Application(tk.Frame):
         self.span = 0
 
         self.flg_scope_run = False
-
         self.rig_info_update_count = 0
-        
 
         BUTTON_WIDTH_MID = 12
         LABEL_WIDTH_MID = 12
@@ -44,23 +43,38 @@ class Application(tk.Frame):
         frame2.grid(pady=5)
 
         frame3 = tk.Frame(master)
-        self.button_scope_run = tk.Button(frame3, text='Scope Run', width=BUTTON_WIDTH_MID, font=('Calibri', 14, 'bold'), command=self.com_scope_run)
+        self.button_scope_run = tk.Button(frame3, text='Scope Run',
+                                          width=BUTTON_WIDTH_MID,
+                                          font=('Calibri', 14, 'bold'),
+                                          command=self.com_scope_run)
         self.button_scope_run.grid(row=0, column=0)
-        self.button_scope_stop = tk.Button(frame3, text='Scope Stop', width=BUTTON_WIDTH_MID, font=('Calibri', 14, 'bold'), command=self.com_scope_stop)
+        self.button_scope_stop = tk.Button(frame3, text='Scope Stop',
+                                           width=BUTTON_WIDTH_MID,
+                                           font=('Calibri', 14, 'bold'),
+                                           command=self.com_scope_stop)
         self.button_scope_stop.grid(row=0, column=1)
-        self.button_save = tk.Button(frame3, text='Save', width=BUTTON_WIDTH_MID, font=('Calibri', 14, 'bold'))
+        self.button_save = tk.Button(frame3, text='Save', width=BUTTON_WIDTH_MID,
+                                     font=('Calibri', 14, 'bold'))
         self.button_save.grid(row=0, column=2)
         frame3.grid(pady=5)
 
         frame4 = tk.Frame(master)
-        self.label_vd = tk.Label(frame4, text='Vd', width=LABEL_WIDTH_MID, font=('Calibri', 14, 'bold'))
-        self.label_temp = tk.Label(frame4, text='Temp', width=LABEL_WIDTH_MID, font=('Calibri', 14, 'bold'))
-        button_rig_on = tk.Button(frame4, text='Rig On', width=BUTTON_WIDTH_MID, font=('Calibri', 14, 'bold'), command=self.com_rig_on)
-        button_rig_off = tk.Button(frame4, text='Rig Off', width=BUTTON_WIDTH_MID, font=('Calibri', 14, 'bold'), command=self.com_rig_off)
-        button_connect = tk.Button(frame4, text='Connect', width=BUTTON_WIDTH_MID, font=('Calibri', 14, 'bold'), command=self.com_connect)
+        self.label_vd = tk.Label(frame4, text='Vd', width=LABEL_WIDTH_MID,
+                                 font=('Calibri', 14, 'bold'))
+        self.label_temp = tk.Label(frame4, text='Temp', width=LABEL_WIDTH_MID,
+                                   font=('Calibri', 14, 'bold'))
+        button_rig_on = tk.Button(frame4, text='Rig On', width=BUTTON_WIDTH_MID,
+                                  font=('Calibri', 14, 'bold'),
+                                  command=self.com_rig_on)
+        button_rig_off = tk.Button(frame4, text='Rig Off', width=BUTTON_WIDTH_MID,
+                                   font=('Calibri', 14, 'bold'),
+                                   command=self.com_rig_off)
+        button_connect = tk.Button(frame4, text='Connect', width=BUTTON_WIDTH_MID,
+                                   font=('Calibri', 14, 'bold'),
+                                   command=self.com_connect)
         combobox_com = ttk.Combobox(frame4, values=civ.CIV.serial_port_list(), height=3)
         combobox_com.set('select com port')
-        
+
         self.label_vd.grid(row=0, column=0)
         combobox_com.grid(row=0, column=1)
         button_connect.grid(row=0, column=2)
@@ -70,14 +84,15 @@ class Application(tk.Frame):
         frame4.grid(pady=5)
 
         frame5 = tk.Frame(master)
-        button_exit = tk.Button(frame5, text='Exit', command=quit, width=BUTTON_WIDTH_MID, font=('Calibri', 14, 'bold'))
+        button_exit = tk.Button(frame5, text='Exit', command=quit,
+                                width=BUTTON_WIDTH_MID, font=('Calibri', 14, 'bold'))
         button_exit.grid()
         frame5.grid(pady=5)
 
         ##
         # ci-v instance
         self.my_rig = civ.CIV('COM5')
-        is_connected = True
+        # is_connected = True
         time.sleep(1)
         self.my_rig.stop_scope_readout()
         self.rig_data_update()
@@ -95,11 +110,11 @@ class Application(tk.Frame):
         # frame1a.grid()
 
     def com_scope_run(self):
-        if self.flg_scope_run == False:
+        if self.flg_scope_run is False:
             self.flg_scope_run = True
 
     def com_scope_stop(self):
-        if self.flg_scope_run == True:
+        if self.flg_scope_run is True:
             self.flg_scope_run = False
 
     def com_save(self):
@@ -135,16 +150,17 @@ class Application(tk.Frame):
         canvas = FigureCanvasTkAgg(self.fig, master=master)
         canvas_widget = canvas.get_tk_widget()
         canvas_widget.pack(side=tk.TOP, fill=tk.BOTH, expand=1)
-    
+
     def redraw_graph(self, event=None):
         # dummy
-        dummy_x = np.linspace(0, 200, 475)
-        dummy_y = np.linspace(30, 120, 475)
+        # dummy_x = np.linspace(0, 200, 475)
+        # dummy_y = np.linspace(30, 120, 475)
 
         SCOPE_DATA_LENGTH = 475
 
         if len(self.scope_data_list) == SCOPE_DATA_LENGTH:
-            x = np.linspace(self.center_freq - self.span, self.center_freq + self.span, SCOPE_DATA_LENGTH)
+            x = np.linspace(self.center_freq - self.span, self.center_freq + self.span,
+                            SCOPE_DATA_LENGTH)
             y = self.scope_data_list
 
             self.graph.set_xdata(x)
@@ -179,16 +195,17 @@ class Application(tk.Frame):
         NUM_XTICKS_LABEL = 11
         span = span / 1000
         xticks_list = np.linspace(start=-span, stop=span, num=NUM_XTICKS_LABEL)
-        
+
         return xticks_list
-    
+
     def span_to_xticks(self, center_freq, span):
         NUM_XTICKS_LABEL = 11
         tick_start = center_freq - span
         tick_stop = center_freq + span
 
-        xticks_list = np.linspace(start=tick_start, stop=tick_stop, num=NUM_XTICKS_LABEL)
-        
+        xticks_list = np.linspace(start=tick_start, stop=tick_stop,
+                                  num=NUM_XTICKS_LABEL)
+
         return xticks_list
 
     def th_info_update(self):
@@ -205,7 +222,8 @@ class Application(tk.Frame):
         while True:
             # print(self.rig_info_update_count)
             if self.flg_scope_run:
-                self.scope_data_list, self.center_freq, self.span = self.my_rig.read_spectrum(True)
+                self.scope_data_list, self.center_freq, self.span\
+                    = self.my_rig.read_spectrum(True)
 
                 # update graph
                 self.redraw_graph()
@@ -214,7 +232,7 @@ class Application(tk.Frame):
                 # freq update
                 if self.center_freq != 0:
                     self.label_freq['text'] = f'{self.center_freq:,} Hz'
-            
+
             if self.rig_info_update_count == RIG_INFO_INTERVAL:
                 # stop scope readout
                 self.my_rig.stop_scope_readout()
@@ -225,14 +243,13 @@ class Application(tk.Frame):
                 self.rig_info_update_count = 0
             else:
                 self.rig_info_update_count += 1
-    
+
     def __del__(self):
         ''' destructor '''
         self.my_rig.stop_scope_readout()
         # self.thread1.join()
         self.thread2.join()
 
-        
 
 def main():
     ''' main function generating window instance '''
