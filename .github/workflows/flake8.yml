@@ -43,7 +43,7 @@ jobs:
           python-version: ${{ matrix.python-version }}
 
   RunBringYourOwnBadge:
-    needs: SerGlobalConstants
+    needs: SetGlobalConstants
     runs-on: ubuntu-latest
     steps:
       - id: date
