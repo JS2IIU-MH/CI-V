@@ -1,10 +1,74 @@
-name: Run Flake8
+name: Run Flake8 when push to repo
 
 on: [push]
 
 jobs:
-  build:
+  SetGlobalConstants:
     runs-on: ubuntu-latest
+    timeout-minutes: 10
+    outputs:
+      PYTHON_39_VERSION: 3.9.12
+      PYTHON_310_VERSION: 3.10.4
+      PYTHON_311_VERSION: 3.11.1
+      PYTHON_312_VERSION: 3.12.0
+      CHECKING_BADGE_COLOR: FFAA00
+      PASSING_BADGE_COLOR: 0088FF
+      RUNNING_OR_FAILING_STATUS: running or failed
+      PASSING_STATUS: passing
+      PASSING_LINTS_BADGE_NAME: passing_lints
+      PASSING_LINTS_BADGE_LABEL: 'passing lints'
+      PASSING_UNIT_TEST_PYTHON_VERSIONS_BADGE_NAME: passing_unit_test_python_versions
+      PASSING_UNIT_TEST_PYTHON_VERSIONS_BADGE_LABEL: 'passing unit tests Python versions'
+    steps:
+      - run: echo 'Setting constans.'
+
+  CreateCache:
+    needs: SetGlobalConstants
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: [
+          '${{ needs.SetGlobalConstants.outputs.PYTHON_39_VERSION }}',
+          '${{ needs.SetGlobalConstants.outputs.PYTHON_310_VERSION }}',
+          '${{ needs.SetGlobalConstants.outputs.PYTHON_311_VERSION }}',
+          '${{ needs.SetGlobalConstants.outputs.PYTHON_312_VERSION }}',
+        ]
+    timeout-minutes: 20
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: CreateCache
+        uses: ./.github/actions/create_env_cache
+        with:
+          python-version: ${{ matrix.python-version }}
+
+  Run BringYourOwnBadge:
+    needs: SerGlobalConstants
+    runs-on: ubuntu-latest
+    steps:
+      - id: date
+        run: echo "##[set-output name=date;]$(date)"
+      - name: Time badge
+        uses: RubbaBoy/BYOB@v1.3.0
+        with:
+          NAME: time
+          LABEL: 'Updated at'
+          STATUS: ${{ steps.date.outputs.date }}
+          COLOR: 00EEFF
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN}}
+      - name: Flake8 lint badge status update
+        uses: RubbaBoy/BYOB@v1.3.0
+        with:
+          NAME: '${{ needs.SetGlobalConstants.outputs.PASSING_LINTS_BADGE_NAME }}'
+          LABEL: '${{ needs.SetGlobalConstants.outputs.PASSING_LINTS_BADGE_LABEL }}'
+          STATUS: '${{ needs.SetGlobalConstants.outputs.RUNNING_OR_FAILING_STATUS }}'
+          COLOR: ${{ needs.SetGlobalConstants.outputs.CHECKING_BADGE_COLOR }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  Run Flake8:
+    needs: [CreateCache, SetGlobalConstants]
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
     strategy:
       matrix:
         python-version: ["3.9", "3.10", "3.11"]

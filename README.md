@@ -3,6 +3,7 @@ CI-V communication utilities
 
 [![linting: pylint](https://img.shields.io/badge/linting-pylint-yellowgreen)](https://github.com/pylint-dev/pylint)
 ![example workflow](https://github.com/JS2IIU-MH/CI-V/actions/workflows/pylint.yml/badge.svg)
+![](https://github.com/JS2IIU-MH/CI-V/time)
 
 ## utilities
 - `civ.py`: IC-7300, ID-51もしくはIC-R6とCI-Vによる通信を行うユーティリティ。
@@ -38,7 +39,7 @@ CI-V communication utilities
 | IC-7851 | `0x8E` | USB経由、REMOTE | |
 | IC-7610 | `0x98` | USB経由 | |
 | IC-7300 | `0x94` | USB経由、REMOTE | 115200 |
-| IC-905 | `0xAC` |  | |
+| IC-905 | `0xAC` | USB経由 | |
 | IC-705 | `0xA4` |  | |
 | IC-9700 | `0xA2` | USB経由、DATA | |
 | IC-7100 | `0x88` | USB経由、REMOTE | |
@@ -77,3 +78,5 @@ CI-V communication utilities
 
 ### Others
 - [Markdown表テーブル作成ツール | NotePM](https://notepm.jp/markdown-table-tool)
+- [RubbaBoy/BYOB: Bring Your Own Badge - Create dynamic README badges based off of your GitHub Actions](https://github.com/RubbaBoy/BYOB)
+
