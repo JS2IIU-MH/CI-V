@@ -1,4 +1,4 @@
-name: Run Flake8 when push to repo
+name: Flake8
 
 on: [push]
 
@@ -92,3 +92,22 @@ jobs:
       - name: Analysing the code with flake8
         run: |
           flake8 --max-line-length=100 $(git ls-files '*.py')
+
+  UpdateReadmeBadgesToPassingStatus:
+    needs: [
+      RunFlake8,
+      CreateCache,
+      SetGlobalConstants
+    ]
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Update each lint badge status
+        uses: RubbaBoy/BYOB@v1.3.0
+        with:
+          name: '${{ needs.SetGlobalConstants.outputs.PASSING_LINTS_BADGE_NAME }}'
+          label: '${{ needs.SetGlobalConstants.outputs.PASSING_LINTS_BADGE_LABEL }}'
+          status: 'flake8'
+          color: ${{ needs.SetGlobalConstants.outputs.PASSING_BADGE_COLOR }}
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+    
