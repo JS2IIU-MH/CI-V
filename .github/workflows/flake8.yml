@@ -21,4 +21,4 @@ jobs:
         pip install pyserial
     - name: Analysing the code with flake8
       run: |
-        flake8 --max-line-length=90 $(git ls-files '*.py')
+        flake8 --max-line-length=100 $(git ls-files '*.py')

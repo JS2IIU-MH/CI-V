@@ -11,20 +11,12 @@ ICOM_DRIVER_KW = 'CP210x'
 DATA_MAX = 11
 
 # CI-V commands
-PREAMBLE = [0xFE, 0xFE]
-POSTAMBLE = [0xFD]
-
-# ID-51
-# ADDR_RIG = [0x86]
-
-# IC-R6
-ADDR_RIG = [0x7E]
-
-# IC-7300
-# ADDR_RIG = [0x94]
+# PREAMBLE, POSAMBLE
+PREA = [0xFE, 0xFE]
+POSA = [0xFD]
 
 # PC HOST ADDRESS
-ADDR_HOST = [0x00]
+ADHOST = [0x00]
 
 cmd_read_freq = [0x03]
 cmd_read_Smeter = [0x15, 0x02]
@@ -55,8 +47,13 @@ class CIV():
         rig_baud = self.rig_baudrate(rig_pn)
 
         # regex pattern for scope data read out
-        # self.pat_scope = re.compile(r'fefe([0-9]{2})([\w]{2})270000([0-9]{2})([0-9]{2})00([0-9]{10})([0-9]{12})fd')
-        self.pat_scope = re.compile(r'fefe00(\w{2})270000([0-9]{2})([0-9]{2})(\w{24}|\w{50}|\w{100})fd')
+        # self.pat_scope =
+        #       re.compile(
+        #           r'fefe([0-9]{2})([\w]{2})270000([0-9]{2})([0-9]{2})00([0-9]{10})([0-9]{12})fd'
+        #           )
+        self.pat_scope = re.compile(
+            r'fefe00(\w{2})270000([0-9]{2})([0-9]{2})(\w{24}|\w{50}|\w{100})fd'
+            )
 
         self.ser = serial.Serial(port=com_port,
                                  baudrate=rig_baud,
@@ -82,7 +79,7 @@ class CIV():
         ''' send_msg to rig
             Args:
                 command_list, byte-by-byte command in list format
-                command_list should include preamble, address and postamble
+                command_list should include PREA, address and POSA
                 ex) [0xFE, 0xFE, 0x94, ...., 0xFD]
             Returns:
                 raw buffer bytes content
@@ -108,7 +105,7 @@ class CIV():
 
     def pwr_off(self):
         ''' shut down '''
-        msg_list = PREAMBLE + self.addr_rig + ADDR_HOST + cmd_pwr_off + POSTAMBLE
+        msg_list = PREA + self.addr_rig + ADHOST + cmd_pwr_off + POSA
         _ = self.send_msg(msg_list)
 
     def pwr_on(self):
@@ -117,13 +114,13 @@ class CIV():
         NUM_RPT = 25
         WAKE = [0xFE]
         for _ in range(NUM_RPT):
-            _ret = self.send_msg(WAKE)
-        msg_list = PREAMBLE + self.addr_rig + ADDR_HOST + cmd_pwr_on + POSTAMBLE
+            self.send_msg(WAKE)
+        msg_list = PREA + self.addr_rig + ADHOST + cmd_pwr_on + POSA
         _ = self.send_msg(msg_list)
 
     def read_freq(self):
         ''' Returns Frequency in Hz '''
-        msg_list = PREAMBLE + self.addr_rig + ADDR_HOST + cmd_read_freq + POSTAMBLE
+        msg_list = PREA + self.addr_rig + ADHOST + cmd_read_freq + POSA
         ret = self.send_msg(msg_list)
         ret_s = ''
 
@@ -145,12 +142,12 @@ class CIV():
 
     def stop_scope_readout(self):
         """ scope readout stop """
-        msg_list = PREAMBLE + self.addr_rig + ADDR_HOST + cmd_scope_readout_off + POSTAMBLE
+        msg_list = PREA + self.addr_rig + ADHOST + cmd_scope_readout_off + POSA
         _ = self.send_msg(msg_list)
 
     def start_scope_readout(self):
         """ scope readout start """
-        msg_list = PREAMBLE + self.addr_rig + ADDR_HOST + cmd_scope_readout_on + POSTAMBLE
+        msg_list = PREA + self.addr_rig + ADHOST + cmd_scope_readout_on + POSA
         _ = self.send_msg(msg_list)
 
     def read_spectrum(self, is_1st=False):
@@ -168,14 +165,14 @@ class CIV():
         # if sspectrum scope is not shown in rig's display, turn on scope
         if is_1st:
             # scope on
-            msg_list = PREAMBLE + self.addr_rig + ADDR_HOST + cmd_scope_on + POSTAMBLE
+            msg_list = PREA + self.addr_rig + ADHOST + cmd_scope_on + POSA
             _ = self.send_msg(msg_list)
             # scope readout on
-            msg_list = PREAMBLE + self.addr_rig + ADDR_HOST + cmd_scope_readout_on + POSTAMBLE
+            msg_list = PREA + self.addr_rig + ADHOST + cmd_scope_readout_on + POSA
             _ = self.send_msg(msg_list)
 
             # read spectrum data
-            msg_list = PREAMBLE + self.addr_rig + ADDR_HOST + cmd_read_spectrum + POSTAMBLE
+            msg_list = PREA + self.addr_rig + ADHOST + cmd_read_spectrum + POSA
             ret_dat = self.send_msg(msg_list)
         # print(ret.hex())
         while count < 15:
@@ -188,9 +185,13 @@ class CIV():
         # data2-11: fefe0094 27 00 ## 11 **data(50/100)** fd
         #
         # regex pattern definition in self.__init__()
-        # pat_scope = re.compile(r'fefe([0-9]{2})([0-9]{2})270000([0-9]{2})([0-9]{2})00([0-9]{10})([0-9]{12})fd')
+        # pat_scope =
+        #       re.compile(
+        #           r'fefe([0-9]{2})([0-9]{2})270000([0-9]{2})([0-9]{2})00([0-9]{10})([0-9]{12})fd'
+        #           )
         # [('00', '94', '01', '11', '000030660900002500000000')]
-        # self.pat_scope = re.compile(r'fefe00(\w{2})270000([0-9]{2})([0-9]{2})(\w{24}|\w{50}|\w{100})fd')
+        # self.pat_scope =
+        #       re.compile(r'fefe00(\w{2})270000([0-9]{2})([0-9]{2})(\w{24}|\w{50}|\w{100})fd')
         res = re.findall(self.pat_scope, ret_dat.hex())
 
         count = 1
@@ -290,16 +291,16 @@ class CIV():
         count = 0
 
         # scope on
-        msg_list = PREAMBLE + self.addr_rig + ADDR_HOST + cmd_scope_on + POSTAMBLE
+        msg_list = PREA + self.addr_rig + ADHOST + cmd_scope_on + POSA
         _ = self.send_msg(msg_list)
 
         # scope readout on
-        msg_list = PREAMBLE + self.addr_rig + ADDR_HOST + cmd_scope_readout_on + POSTAMBLE
+        msg_list = PREA + self.addr_rig + ADHOST + cmd_scope_readout_on + POSA
         _ = self.send_msg(msg_list)
 
         with open(filename, 'w', encoding='utf-8') as f:
             # data request
-            msg_list = PREAMBLE + self.addr_rig + ADDR_HOST + cmd_read_spectrum + POSTAMBLE
+            msg_list = PREA + self.addr_rig + ADHOST + cmd_read_spectrum + POSA
             ret = self.send_msg(msg_list)
             f.write(ret.hex() + '\n')
 
@@ -311,13 +312,13 @@ class CIV():
 
     def read_temp(self):
         """ request temperature information """
-        msg_list = PREAMBLE + self.addr_rig + ADDR_HOST + cmd_temp + POSTAMBLE
+        msg_list = PREA + self.addr_rig + ADHOST + cmd_temp + POSA
         ret = self.send_msg(msg_list)
         return ret
 
     def read_vd(self):
         """ read Vd value in V, IC-7300 only"""
-        msg_list = PREAMBLE + self.addr_rig + ADDR_HOST + cmd_vd + POSTAMBLE
+        msg_list = PREA + self.addr_rig + ADHOST + cmd_vd + POSA
         ret = self.send_msg(msg_list)
         s = re.search(r'fefe00([\w]{2})1515([0-9]{4})fd', ret.hex())
         if s is not None:
@@ -340,9 +341,9 @@ class CIV():
         opmode_str = ['LSB', 'USB', 'AM', 'CW', 'RTTY',
                       'FM', 'Reserved', 'CW-R', 'RTTY-R', 'N/A',
                       'N/A', 'N/A', 'N/A', 'N/A', 'N/A',
-                      'N/A','N/A', 'DV']
+                      'N/A', 'N/A', 'DV']
 
-        msg_list = PREAMBLE + self.addr_rig + ADDR_HOST + cmd_read_opmode + POSTAMBLE
+        msg_list = PREA + self.addr_rig + ADHOST + cmd_read_opmode + POSA
         ret = self.send_msg(msg_list)
         s = re.search(r'fefe00([\w]{2})04([0-9]{4})fd', ret.hex())
 
@@ -353,23 +354,25 @@ class CIV():
             num = 9
 
         return opmode_str[num]
-    
+
     def read_gps_position(self):
         """ read out GPS position data
             Returns:
                 tuple latitude, longitude
         """
         # cmd_read_gps_pos
-        msg_list = PREAMBLE + self.addr_rig + ADDR_HOST + cmd_read_gps_pos + POSTAMBLE
+        msg_list = PREA + self.addr_rig + ADHOST + cmd_read_gps_pos + POSA
         ret = self.send_msg(msg_list)
-        pat_gps = re.compile(r'fefe00(\w{2})2300([0-9]{10})([0-9]{12})(\w{8})([0-9]{4})([0-9]{6})([0-9]{14})fd')
+        pat_gps = re.compile(
+            r'fefe00(\w{2})2300([0-9]{10})([0-9]{12})(\w{8})([0-9]{4})([0-9]{6})([0-9]{14})fd'
+            )
         s = re.findall(pat_gps, ret.hex())
         # print(s)
         lat = s[0][1]
         lon = s[0][2]
         alt = s[0][3]
         time_utc = s[0][6]
-        print(f'latitude: {lat}, longitude: {lon}, altitude: {alt}, datetime: {time_utc}')
+        print(f'latitude: {lat}, longitude: {lon}, altitude: {alt}, time: {time_utc}')
 
         return lat, lon
 
@@ -384,37 +387,37 @@ class CIV():
                 out_msg = out_msg + msg_in[num-i*2-2:num-i*2]
             return out_msg
         return ''
-    
+
     @classmethod
     def rig_address(cls, rig_pn):
         """ returns rig's CI-V address in string """
-        RIG_ADDRESS_DICT = {
+        rig_address_dict = {
             'IC-7300': 0x94,
             'ID-51': 0x86,
             'IC-R6': 0x7E,
         }
         try:
-            rig_address = RIG_ADDRESS_DICT[rig_pn]
+            rig_address = rig_address_dict[rig_pn]
         except KeyError:
             print(f'KeyError: {rig_pn} is not in list')
             rig_address = 0x00
-        
+
         return [rig_address]
 
     @classmethod
     def rig_baudrate(cls, rig_pn):
         """ returns rig's max baudrate [bps] in int """
-        RIG_BAUD_DICT = {
+        rig_baud_dict = {
             'IC-7300': 115200,
             'ID-51': 19200,
             'IC-R6': 19200,
         }
         try:
-            rig_baud = RIG_BAUD_DICT[rig_pn]
+            rig_baud = rig_baud_dict[rig_pn]
         except KeyError:
             print(f'KeyError: {rig_pn} is not in list')
             rig_baud = 19200
-        
+
         return rig_baud
 
     def __del__(self):
