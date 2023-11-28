@@ -3,7 +3,7 @@ CI-V communication utilities
 
 [![linting: pylint](https://img.shields.io/badge/linting-pylint-yellowgreen)](https://github.com/pylint-dev/pylint)
 ![example workflow](https://github.com/JS2IIU-MH/CI-V/actions/workflows/flake8.yml/badge.svg)
-![](https://byob.yarr.is/JS2IIU-MH/CI-V/time)
+![](https://byob.yarr.is/JS2IIU-MH/CI-V/passing_lints)
 [![License: MIT](https://img.shields.io/badge/License-MIT-brightgreen.svg)](LICENSE)
 
 ## utilities
