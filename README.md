@@ -89,3 +89,4 @@ CI-V communication utilities
 - [RubbaBoy/BYOB: Bring Your Own Badge - Create dynamic README badges based off of your GitHub Actions](https://github.com/RubbaBoy/BYOB)
 - [入門 GitHub Actions（Pythonライブラリ・Lint・テスト・PyPIアップロード・バッジ設定） #Python - Qiita](https://qiita.com/simonritchie/items/629a02fc1ad0fd02d267#%E3%82%AB%E3%83%90%E3%83%AC%E3%83%83%E3%82%B8%E3%81%AE%E3%83%90%E3%83%83%E3%82%B8%E3%82%92readme%E3%81%AB%E8%BF%BD%E5%8A%A0%E3%81%99%E3%82%8B)
 - [プライベートのPythonライブラリ開発で設定しているGitHub Actionsを一通りしっかりまとめてみた #Python - Qiita](https://qiita.com/simonritchie/items/531283b333c953d5c31e)
+- [badgen/badgen: Fast handcraft svg badge generator.](https://github.com/badgen/badgen)
