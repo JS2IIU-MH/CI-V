@@ -1,4 +1,7 @@
 '''basic example for CI-V programming '''
+from datetime import datetime
+from logging import getLogger, StreamHandler, FileHandler, Formatter
+from logging import DEBUG
 import re
 import struct
 import time
@@ -36,6 +39,24 @@ cmd_read_opmode = [0x04]
 
 cmd_read_gps_pos = [0x23, 0x00]
 
+# Logger setting
+logger = getLogger(__name__)
+log_fmt = Formatter('%(asctime)s | %(filename)s | %(name)s | %(funcName)s \
+                    | %(levelname)s | %(message)s')
+
+shandler = StreamHandler()
+shandler.setLevel(DEBUG)
+shandler.setFormatter(log_fmt)
+
+fhandler = FileHandler(f'./Log/log_{datetime.now():%Y%m%d%H%M%S}.log', encoding='utf-8')
+fhandler.setLevel(DEBUG)
+fhandler.setFormatter(log_fmt)
+
+logger.setLevel(DEBUG)
+logger.addHandler(shandler)
+logger.addHandler(fhandler)
+logger.propagate = False
+
 
 class CIV():
     ''' class CIV, controls i-com rig via CI-V
@@ -43,6 +64,7 @@ class CIV():
     '''
     def __init__(self, com_port, rig_pn='IC-7300') -> None:
         # rig address and baudrate setting
+        logger.info(f'dig part name: {rig_pn}')
         self.addr_rig = self.rig_address(rig_pn)
         rig_baud = self.rig_baudrate(rig_pn)
 
@@ -55,11 +77,16 @@ class CIV():
             r'fefe00(\w{2})270000([0-9]{2})([0-9]{2})(\w{24}|\w{50}|\w{100})fd'
             )
 
-        self.ser = serial.Serial(port=com_port,
-                                 baudrate=rig_baud,
-                                 parity=serial.PARITY_NONE,
-                                 stopbits=serial.STOPBITS_ONE,
-                                 timeout=2)
+        logger.info(f'open com port: {com_port}')
+        try:
+            self.ser = serial.Serial(port=com_port,
+                                     baudrate=rig_baud,
+                                     parity=serial.PARITY_NONE,
+                                     stopbits=serial.STOPBITS_ONE,
+                                     timeout=2)
+        except serial.serialutil.SerialException:
+            logger.error(f'Serial port exception: {com_port}')
+            
         # self.is_icom_rig = self.check_port()
 
     def check_port(self):
@@ -100,26 +127,29 @@ class CIV():
         # TODO: readlineのほうが良いかも
         # buffer = self.ser.read(100)
         buffer = self.ser.readline()
-        print(buffer)
+        logger.debug(buffer)
         return buffer
 
     def pwr_off(self):
         ''' shut down '''
+        logger.info('try to shut down connected rig')
         msg_list = PREA + self.addr_rig + ADHOST + cmd_pwr_off + POSA
-        _ = self.send_msg(msg_list)
+        self.send_msg(msg_list)
 
     def pwr_on(self):
         ''' pwr on - does not work on USB connection '''
+        logger.info('try to turn on connected rig')
         # baud 19200 -> 0xFE * 25
         NUM_RPT = 25
         WAKE = [0xFE]
         for _ in range(NUM_RPT):
             self.send_msg(WAKE)
         msg_list = PREA + self.addr_rig + ADHOST + cmd_pwr_on + POSA
-        _ = self.send_msg(msg_list)
+        self.send_msg(msg_list)
 
     def read_freq(self):
         ''' Returns Frequency in Hz '''
+        logger.info('Reading current Frequency')
         msg_list = PREA + self.addr_rig + ADHOST + cmd_read_freq + POSA
         ret = self.send_msg(msg_list)
         ret_s = ''
@@ -134,8 +164,9 @@ class CIV():
             # ret = ret[(len(msg_list) - 1) * 2:-2]
             freq = self.reverse_msg(ret_s)
             freq = int(freq)
-            # print(freq)
+            logger.debug(f'Freq raw msg: {freq}')
         else:
+            logger.error('Frequency read out was failed')
             freq = 0
 
         return freq
@@ -143,12 +174,12 @@ class CIV():
     def stop_scope_readout(self):
         """ scope readout stop """
         msg_list = PREA + self.addr_rig + ADHOST + cmd_scope_readout_off + POSA
-        _ = self.send_msg(msg_list)
+        self.send_msg(msg_list)
 
     def start_scope_readout(self):
         """ scope readout start """
         msg_list = PREA + self.addr_rig + ADHOST + cmd_scope_readout_on + POSA
-        _ = self.send_msg(msg_list)
+        self.send_msg(msg_list)
 
     def read_spectrum(self, is_1st=False):
         ''' read out spectrum scope data from IC-7300
@@ -166,14 +197,15 @@ class CIV():
         if is_1st:
             # scope on
             msg_list = PREA + self.addr_rig + ADHOST + cmd_scope_on + POSA
-            _ = self.send_msg(msg_list)
+            self.send_msg(msg_list)
             # scope readout on
             msg_list = PREA + self.addr_rig + ADHOST + cmd_scope_readout_on + POSA
-            _ = self.send_msg(msg_list)
+            self.send_msg(msg_list)
 
             # read spectrum data
             msg_list = PREA + self.addr_rig + ADHOST + cmd_read_spectrum + POSA
             ret_dat = self.send_msg(msg_list)
+            logger.debug(f'ret_dat: {ret_dat}')
         # print(ret.hex())
         while count < 15:
             ret_dat = ret_dat + self.ser.readline()
@@ -193,6 +225,7 @@ class CIV():
         # self.pat_scope =
         #       re.compile(r'fefe00(\w{2})270000([0-9]{2})([0-9]{2})(\w{24}|\w{50}|\w{100})fd')
         res = re.findall(self.pat_scope, ret_dat.hex())
+        logger.debug(f'res: {res}')
 
         count = 1
         scope_data = ''
@@ -216,6 +249,7 @@ class CIV():
                         # print(center_freq, data[2:12])
                         span = self.decode_span(data[12:])
                         # print(f'centfreq: {center_freq:,} Hz, span: {span:,} Hz')
+                        logger.debug(f'Centfreq: {center_freq:,} Hz, Span: {span:,} Hz')
                         is_find_1st = True
                 else:
                     # ### add data
@@ -268,7 +302,6 @@ class CIV():
                  + int(span_string[3:4]) * 100\
                  + int(span_string[4:5]) * 100000\
                  + int(span_string[5:6]) * 10000
-
         else:
             span = 0
         return span
@@ -286,17 +319,19 @@ class CIV():
 
     def read_spectrum_to_file(self):
         """ spectrum data save to csv """
+        logger.info('output spectrum data to csv')
         # READ_MAX = 11
-        filename = 'spectrum_out2.txt'
+        filename = f'./Log/spectrum_{datetime.now()::%Y%m%d_%H%M%S}.csv'
+        logger.info(f'filename: {filename}')
         count = 0
 
         # scope on
         msg_list = PREA + self.addr_rig + ADHOST + cmd_scope_on + POSA
-        _ = self.send_msg(msg_list)
+        self.send_msg(msg_list)
 
         # scope readout on
         msg_list = PREA + self.addr_rig + ADHOST + cmd_scope_readout_on + POSA
-        _ = self.send_msg(msg_list)
+        self.send_msg(msg_list)
 
         with open(filename, 'w', encoding='utf-8') as f:
             # data request
@@ -372,7 +407,8 @@ class CIV():
         lon = s[0][2]
         alt = s[0][3]
         time_utc = s[0][6]
-        print(f'latitude: {lat}, longitude: {lon}, altitude: {alt}, time: {time_utc}')
+        # print(f'latitude: {lat}, longitude: {lon}, altitude: {alt}, time: {time_utc}')
+        logger.debug(f'latitude: {lat}, longitude: {lon}, altitude: {alt}, time: {time_utc}')
 
         return lat, lon
 
@@ -386,11 +422,12 @@ class CIV():
             for i in range(int(num / 2)):
                 out_msg = out_msg + msg_in[num-i*2-2:num-i*2]
             return out_msg
-        return ''
+        else:
+            return ''
 
     @classmethod
     def rig_address(cls, rig_pn):
-        """ returns rig's CI-V address in string """
+        """ returns rig's CI-V address in [string] """
         rig_address_dict = {
             'IC-7300': 0x94,
             'ID-51': 0x86,
@@ -399,7 +436,8 @@ class CIV():
         try:
             rig_address = rig_address_dict[rig_pn]
         except KeyError:
-            print(f'KeyError: {rig_pn} is not in list')
+            # print(f'KeyError: {rig_pn} is not in list')
+            logger.error(f'KeyError: {rig_pn} is not in list')
             rig_address = 0x00
 
         return [rig_address]
@@ -415,7 +453,8 @@ class CIV():
         try:
             rig_baud = rig_baud_dict[rig_pn]
         except KeyError:
-            print(f'KeyError: {rig_pn} is not in list')
+            # print(f'KeyError: {rig_pn} is not in list')
+            logger.error(f'KeyError: {rig_pn} is not in list')
             rig_baud = 19200
 
         return rig_baud
