@@ -86,7 +86,7 @@ class CIV():
                                      timeout=2)
         except serial.serialutil.SerialException:
             logger.error(f'Serial port exception: {com_port}')
-            
+
         # self.is_icom_rig = self.check_port()
 
     def check_port(self):
@@ -261,6 +261,8 @@ class CIV():
                             scope_data_list.append(int(da, 16))
                         is_complete = True
 
+        logger.debug(f'scope data: {scope_data_list}')
+        
         return scope_data_list, center_freq, span
 
     @classmethod
