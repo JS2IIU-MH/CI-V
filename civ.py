@@ -262,7 +262,7 @@ class CIV():
                         is_complete = True
 
         logger.debug(f'scope data: {scope_data_list}')
-        
+
         return scope_data_list, center_freq, span
 
     @classmethod
