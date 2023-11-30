@@ -6,6 +6,7 @@ CI-V communication utilities
 ![example workflow](https://github.com/JS2IIU-MH/CI-V/actions/workflows/flake8.yml/badge.svg)
 -->
 ![](https://byob.yarr.is/JS2IIU-MH/CI-V/passing_lints)
+![](https://byob.yarr.is/JS2IIU-MH/CI-V/time)
 [![License: MIT](https://img.shields.io/badge/License-MIT-brightgreen.svg)](LICENSE)
 
 ## utilities
